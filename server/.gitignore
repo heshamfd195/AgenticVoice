@@ -1,0 +1,29 @@
+# Ignore virtual environments
+myenv/
+.python/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# FastAPI-specific files
+instance/
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+
+# Generated audio and video files
+generated_audio/
+generated_video/
+*.wav
+*.mp4
+
+# Environment variables
+.env
+.env.local
+
+# OS-specific files
+.DS_Store
+Thumbs.db
