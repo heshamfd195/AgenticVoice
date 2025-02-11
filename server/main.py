@@ -1,38 +1,25 @@
+import socketio
+from fastapi import FastAPI
 import asyncio
+from datetime import datetime
+import os
 
-from dotenv import load_dotenv
-from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
-from livekit.agents.voice_assistant import VoiceAssistant
-from livekit.plugins import openai, silero
-from api import AssistantFnc
+app = FastAPI()
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins="*")
+sio_app = socketio.ASGIApp(socketio_server=sio, other_asgi_app=app)
 
-load_dotenv()
+# Create audio directory if it doesn't exist
+AUDIO_DIR = "audio_files"
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
+# Handle incoming audio data
+@sio.on("audio_stream")
+async def handle_audio(sid, data):
+    print(f"Received {len(data)} bytes of audio from {sid}")
 
-async def entrypoint(ctx: JobContext):
-    initial_ctx = llm.ChatContext().append(
-        role="system",
-        text=(
-            "You are a voice assistant created by LiveKit. Your interface with users will be voice. "
-            "You should use short and concise responses, and avoiding usage of unpronouncable punctuation."
-        ),
-    )
-    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
-    fnc_ctx = AssistantFnc()
+    # Optional: Save audio file
+    with open("received_audio.webm", "ab") as f:
+        f.write(data)
 
-    assitant = VoiceAssistant(
-        vad=silero.VAD.load(),
-        stt=openai.STT(),
-        llm=openai.LLM.with_ollama(),
-        tts=openai.TTS(),
-        chat_ctx=initial_ctx,
-        fnc_ctx=fnc_ctx,
-    )
-    assitant.start(ctx.room)
-
-    await asyncio.sleep(1)
-    await assitant.say("Hey, how can I help you today!", allow_interruptions=True)
-
-
-if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+# Attach the Socket.IO app to FastAPI
+app.mount("/", sio_app)
