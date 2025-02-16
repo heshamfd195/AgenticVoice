@@ -1,117 +1,85 @@
-import { SOCKET_EVENTS } from '@/sockets/events';
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
+import { VoiceController } from '@/modules/voice';
 
+/**
+ * Props interface for the useAudioRecorder hook
+ * @interface AudioRecorderHookProps
+ * @property {Socket | null} socket - Socket.io client instance for real-time communication
+ * @property {Function} onAudioLevelUpdate - Callback function to handle audio level updates for visualization
+ */
 interface AudioRecorderHookProps {
   socket: Socket | null;
   onAudioLevelUpdate: (levels: number[]) => void;
 }
 
-
+/**
+ * Custom hook for managing audio recording and processing state
+ * @param {AudioRecorderHookProps} props - The hook's configuration props
+ * @returns {Object} An object containing recording state and control functions
+ */
 export const useAudioRecorder = ({ socket, onAudioLevelUpdate }: AudioRecorderHookProps) => {
+  const voiceControllerRef = useRef<VoiceController | null>(null);
   const [recording, setRecording] = useState(false);
-  const [transcription, setTranscription] = useState<string>('');
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number | undefined>(undefined);
+  const [transcription, setTranscription] = useState('');
+  const [synthAudio, setSynthAudio] = useState<HTMLAudioElement | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
 
-  const setupAudioAnalyser = useCallback((stream: MediaStream) => {
-    const audioContext = new AudioContext();
-    const source = audioContext.createMediaStreamSource(stream);
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
-    analyserRef.current = analyser;
-  }, []);
-
-  const setupMediaRecorder = useCallback((stream: MediaStream) => {
-    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0 && socket) {
-        socket.emit(SOCKET_EVENTS.AUDIO_STREAM, event.data);
+  /**
+   * Effect hook to initialize VoiceController and setup subscriptions
+   * Handles cleanup on unmount or socket changes
+   */
+  useEffect(() => {
+    if (!socket) return;
+    
+    voiceControllerRef.current = new VoiceController(socket);
+    
+    const subscription = voiceControllerRef.current.state$.subscribe(state => {
+      setRecording(state.isRecording);
+      setTranscription(state.transcription);
+      setIsProcessing(state.processingStatus.isProcessing);
+      setProcessingStatus(state.processingStatus.status);
+      onAudioLevelUpdate(state.audioLevels);
+      
+      if (state.audioUrl) {
+        setSynthAudio(new Audio(state.audioUrl));
       }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      voiceControllerRef.current?.dispose();
     };
+  }, [socket, onAudioLevelUpdate]);
 
-    mediaRecorderRef.current = mediaRecorder;
-  }, [socket]);
-
-  // Function to update audio levels for visualization
-  const updateAudioLevel = useCallback(() => {
-    if (analyserRef.current) {
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-      analyserRef.current.getByteFrequencyData(dataArray);
-      
-      const normalizedData = Array.from({ length: 30 }, (_, i) => {
-        const index = Math.floor(i * dataArray.length / 30);
-        return (dataArray[index] / 255) * 50;
-      });
-      
-      onAudioLevelUpdate(normalizedData);
-      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
-    }
-  }, [onAudioLevelUpdate]);
-
-  // Start recording function
+  /**
+   * Initiates audio recording
+   * @async
+   * @throws {Error} When recording fails to start
+   */
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
-      setupAudioAnalyser(stream);
-      setupMediaRecorder(stream);
-
-      mediaRecorderRef.current?.start(500);
-      setRecording(true);
-      updateAudioLevel();
+      await voiceControllerRef.current?.startRecording();
     } catch (error) {
       console.error('Error starting recording:', error);
     }
   };
 
-  const cleanupResources = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    setRecording(false);
-  }, []);
-
-  // Stop recording function
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      
-      mediaRecorderRef.current.addEventListener('stop', () => {
-        if (socket) {
-          socket.emit(SOCKET_EVENTS.AUDIO_COMPLETE);
-        }
-      });
-    }
-    cleanupResources();
-  }, [socket, cleanupResources]);
-
-  // Add useEffect to listen for transcription
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.on('transcription_complete', (text: string) => {
-      console.log('Transcription received:', text);
-      setTranscription(text);
-    });
-
-    return () => {
-      socket.off('transcription_complete');
-    };
-  }, [socket]);
+  /**
+   * Stops the current audio recording session
+   */
+  const stopRecording = () => {
+    voiceControllerRef.current?.stopRecording();
+  };
 
   return {
     recording,
     startRecording,
     stopRecording,
-    transcription
+    transcription,
+    synthAudio,
+    isProcessing,
+    processingStatus
   };
 };

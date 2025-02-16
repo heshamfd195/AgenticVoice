@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSocketConnection } from "../hooks/useSocketConnection";
 import { useTimer } from "@/hooks/useTimer";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -14,11 +14,32 @@ export default function Home() {
 
   // Custom hooks
   const socket = useSocketConnection();
-  const { recording, startRecording, stopRecording, transcription } = useAudioRecorder({
+  const { 
+    recording, 
+    startRecording, 
+    stopRecording, 
+    transcription, 
+    synthAudio,
+    isProcessing,
+    processingStatus 
+  } = useAudioRecorder({
     socket,
     onAudioLevelUpdate: setAudioLevel,
   });
   const timer = useTimer(recording);
+
+  // Add loading state for synthesis
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+
+  // Update audio visualization when synthesis is playing
+  useEffect(() => {
+    if (synthAudio) {
+      setIsSynthesizing(true);
+      synthAudio.onended = () => {
+        setIsSynthesizing(false);
+      };
+    }
+  }, [synthAudio]);
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
@@ -27,8 +48,11 @@ export default function Home() {
           Voice Assistant
         </h1>
 
-        {/* Audio Visualization */}
-        <AudioVisualizer audioLevel={audioLevel} recording={recording}/>
+        {/* Audio Visualization - now shows for both recording and synthesis */}
+        <AudioVisualizer 
+          audioLevel={audioLevel} 
+          recording={recording || isProcessing}
+        />
 
         {/* Transcription Display */}
         {transcription && (
@@ -40,12 +64,20 @@ export default function Home() {
         {/* Timer Display */}
         <TimerDisplay timer={timer}/>
 
-        {/* Record Button */}
+        {/* Record Button - disabled during synthesis */}
         <RecordButton
           recording={recording}
           startRecording={startRecording}
           stopRecording={stopRecording}
+          disabled={isProcessing}
         />
+
+        {/* Optional: Synthesis Status */}
+        {isProcessing && (
+          <div className="mt-2 text-center text-blue-400">
+            {processingStatus}
+          </div>
+        )}
       </div>
     </div>
   );

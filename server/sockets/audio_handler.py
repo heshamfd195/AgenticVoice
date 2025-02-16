@@ -2,11 +2,10 @@ import os
 from modules.audio.audio_service import save_audio_chunk
 from ai.models.tts_synthesizer import synthesize_text
 from ai.models.whisper_stt_transcriber import transcribe_audio
-from core.app import sio  # Import sio from core.app instead
+from core.app import sio
 
 AUDIO_DIR = "audio_files"
 os.makedirs(AUDIO_DIR, exist_ok=True)
-
 
 async def handle_audio(sid, data):
     """Handles incoming audio stream from WebSocket."""
@@ -27,15 +26,21 @@ async def on_audio_complete(sid):
         delattr(handle_audio, f'started_{sid}')
     
     audio_path = f'{AUDIO_DIR}/streamed_audio.mp3'
-    transcription = transcribe_audio(audio_path)
-    print(transcription)
+    try:
+        # Send processing status
+        await sio.emit('processing_status', 'Transcribing audio...', room=sid)
+        transcription = transcribe_audio(audio_path)
+        
+        await sio.emit('transcription_complete', transcription, room=sid)
+        await sio.emit('processing_status', 'Generating response...', room=sid)
+        
+        # Pass the socket instance to synthesize_text
+        await synthesize_text(transcription, sio, sid)
+        
+    except Exception as e:
+        print(f"Error processing audio: {str(e)}")
+        await sio.emit('processing_error', str(e), room=sid)
     
-    synthesize_text(transcription)
-    
-    # Emit transcription back to the client using the shared sio instance
-    await sio.emit('transcription_complete', transcription, room=sid)
-
-   
     return transcription
 
 
