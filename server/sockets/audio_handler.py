@@ -3,6 +3,7 @@ from modules.audio.audio_service import save_audio_chunk
 from ai.models.tts_synthesizer import synthesize_text
 from ai.models.whisper_stt_transcriber import transcribe_audio
 from core.app import sio
+from ai.llm.ollama_generator import ollama_generate_text
 
 AUDIO_DIR = "audio_files"
 os.makedirs(AUDIO_DIR, exist_ok=True)
@@ -32,10 +33,15 @@ async def on_audio_complete(sid):
         transcription = transcribe_audio(audio_path)
         
         await sio.emit('transcription_complete', transcription, room=sid)
-        await sio.emit('processing_status', 'Generating response...', room=sid)
+        await sio.emit('processing_status', 'Generating AI response...', room=sid)
         
-        # Pass the socket instance to synthesize_text
-        await synthesize_text(transcription, sio, sid)
+        # Generate response using Ollama
+        ai_response = ollama_generate_text(transcription)
+        
+        await sio.emit('processing_status', 'Converting response to speech...', room=sid)
+        
+        # Pass the AI response to speech synthesis
+        await synthesize_text(ai_response, sio, sid)
         
     except Exception as e:
         print(f"Error processing audio: {str(e)}")
