@@ -32,7 +32,7 @@ export default function Home() {
 
         {/* Transcription Display */}
         {transcription && (
-          <div className="mt-4 p-4 bg-gray-700 rounded-lg">
+          <div className="mt-4 p-4 bg-gray-700 rounded-lg mb-4">
             <p className="text-white">{transcription}</p>
           </div>
         )}

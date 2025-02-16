@@ -1,5 +1,6 @@
 import os
 from modules.audio.audio_service import save_audio_chunk
+from ai.models.tts_synthesizer import synthesize_text
 from ai.models.whisper_stt_transcriber import transcribe_audio
 from core.app import sio  # Import sio from core.app instead
 
@@ -29,8 +30,12 @@ async def on_audio_complete(sid):
     transcription = transcribe_audio(audio_path)
     print(transcription)
     
+    synthesize_text(transcription)
+    
     # Emit transcription back to the client using the shared sio instance
     await sio.emit('transcription_complete', transcription, room=sid)
+
+   
     return transcription
 
 

@@ -17,8 +17,10 @@ instance/
 # Generated audio and video files
 generated_audio/
 generated_video/
+audio
 *.wav
 *.mp4
+*.mp3
 
 # Environment variables
 .env
