@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
+import { SOCKET_EVENTS } from '@/sockets/events';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
 
 interface AudioRecorderHookProps {
@@ -6,12 +7,35 @@ interface AudioRecorderHookProps {
   onAudioLevelUpdate: (levels: number[]) => void;
 }
 
+
 export const useAudioRecorder = ({ socket, onAudioLevelUpdate }: AudioRecorderHookProps) => {
   const [recording, setRecording] = useState(false);
+  const [transcription, setTranscription] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
+
+  const setupAudioAnalyser = useCallback((stream: MediaStream) => {
+    const audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(stream);
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    analyserRef.current = analyser;
+  }, []);
+
+  const setupMediaRecorder = useCallback((stream: MediaStream) => {
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0 && socket) {
+        socket.emit(SOCKET_EVENTS.AUDIO_STREAM, event.data);
+      }
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+  }, [socket]);
 
   // Function to update audio levels for visualization
   const updateAudioLevel = useCallback(() => {
@@ -35,22 +59,10 @@ export const useAudioRecorder = ({ socket, onAudioLevelUpdate }: AudioRecorderHo
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyserRef.current = analyser;
-      
-      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      setupAudioAnalyser(stream);
+      setupMediaRecorder(stream);
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0 && socket) {
-          socket.emit('audio_stream', event.data);
-        }
-      };
-
-      mediaRecorderRef.current.start(500);
+      mediaRecorderRef.current?.start(500);
       setRecording(true);
       updateAudioLevel();
     } catch (error) {
@@ -58,18 +70,7 @@ export const useAudioRecorder = ({ socket, onAudioLevelUpdate }: AudioRecorderHo
     }
   };
 
-  // Stop recording function
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      
-      // Add event listener for when recording actually stops
-      mediaRecorderRef.current.addEventListener('stop', () => {
-        if (socket) {
-          socket.emit('audio_complete');
-        }
-      });
-    }
+  const cleanupResources = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -77,11 +78,40 @@ export const useAudioRecorder = ({ socket, onAudioLevelUpdate }: AudioRecorderHo
       cancelAnimationFrame(animationFrameRef.current);
     }
     setRecording(false);
+  }, []);
+
+  // Stop recording function
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      
+      mediaRecorderRef.current.addEventListener('stop', () => {
+        if (socket) {
+          socket.emit(SOCKET_EVENTS.AUDIO_COMPLETE);
+        }
+      });
+    }
+    cleanupResources();
+  }, [socket, cleanupResources]);
+
+  // Add useEffect to listen for transcription
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('transcription_complete', (text: string) => {
+      console.log('Transcription received:', text);
+      setTranscription(text);
+    });
+
+    return () => {
+      socket.off('transcription_complete');
+    };
   }, [socket]);
 
   return {
     recording,
     startRecording,
-    stopRecording
+    stopRecording,
+    transcription
   };
 };

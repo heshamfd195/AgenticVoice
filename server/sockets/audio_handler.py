@@ -1,6 +1,7 @@
 import os
 from modules.audio.audio_service import save_audio_chunk
 from ai.models.whisper_stt_transcriber import transcribe_audio
+from core.app import sio  # Import sio from core.app instead
 
 AUDIO_DIR = "audio_files"
 os.makedirs(AUDIO_DIR, exist_ok=True)
@@ -15,7 +16,7 @@ async def handle_audio(sid, data):
     if is_first_chunk:
         setattr(handle_audio, f'started_{sid}', True)
     
-    audio_path = "streamed_audio.mp3"
+    audio_path = "streamed_audio.mp3"  # Just the filename
     save_audio_chunk(data, audio_path, is_first_chunk=is_first_chunk)
 
 async def on_audio_complete(sid):
@@ -26,6 +27,10 @@ async def on_audio_complete(sid):
     
     audio_path = f'{AUDIO_DIR}/streamed_audio.mp3'
     transcription = transcribe_audio(audio_path)
+    print(transcription)
+    
+    # Emit transcription back to the client using the shared sio instance
+    await sio.emit('transcription_complete', transcription, room=sid)
     return transcription
 
 

@@ -11,8 +11,6 @@ def transcribe_audio(file_path: str) -> str:
     
     # Transcribe the audio file
     result = model.transcribe(file_path, fp16=False)
-
-    print(result["text"])
     
     return result["text"]
 

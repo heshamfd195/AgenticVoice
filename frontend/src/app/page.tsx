@@ -14,7 +14,7 @@ export default function Home() {
 
   // Custom hooks
   const socket = useSocketConnection();
-  const { recording, startRecording, stopRecording } = useAudioRecorder({
+  const { recording, startRecording, stopRecording, transcription } = useAudioRecorder({
     socket,
     onAudioLevelUpdate: setAudioLevel,
   });
@@ -28,7 +28,14 @@ export default function Home() {
         </h1>
 
         {/* Audio Visualization */}
-        <AudioVisualizer audioLevel={audioLevel} recording={false}/>
+        <AudioVisualizer audioLevel={audioLevel} recording={recording}/>
+
+        {/* Transcription Display */}
+        {transcription && (
+          <div className="mt-4 p-4 bg-gray-700 rounded-lg">
+            <p className="text-white">{transcription}</p>
+          </div>
+        )}
 
         {/* Timer Display */}
         <TimerDisplay timer={timer}/>
