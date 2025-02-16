@@ -12,7 +12,7 @@ model = whisper.load_model("base")
 async def transcribe_audio(file: UploadFile = File(...)):
     try:
         # Save the uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
             temp_audio.write(file.file.read())
             temp_audio_path = temp_audio.name
         

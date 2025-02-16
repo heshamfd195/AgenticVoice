@@ -62,6 +62,13 @@ export const useAudioRecorder = ({ socket, onAudioLevelUpdate }: AudioRecorderHo
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
+      
+      // Add event listener for when recording actually stops
+      mediaRecorderRef.current.addEventListener('stop', () => {
+        if (socket) {
+          socket.emit('audio_complete');
+        }
+      });
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -70,7 +77,7 @@ export const useAudioRecorder = ({ socket, onAudioLevelUpdate }: AudioRecorderHo
       cancelAnimationFrame(animationFrameRef.current);
     }
     setRecording(false);
-  }, []);
+  }, [socket]);
 
   return {
     recording,
