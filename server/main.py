@@ -1,5 +1,6 @@
 from core.app import app, sio_app  # Import FastAPI & Socket.IO app
-import core.sockets  # Ensures WebSocket event handlers are loaded
+import controller.sockets_handlers
+
 
 # Mount the Socket.IO app on FastAPI
 app.mount("/", sio_app)
