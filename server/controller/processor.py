@@ -4,6 +4,7 @@ from ai.models.tts_synthesizer import synthesize_text
 from ai.models.whisper_stt_transcriber import transcribe_audio
 from core.app import sio
 from ai.llm.ollama.ollama_generator import ollama_generate_text
+from ai.chains.conversation_chain import conversation_chain
 
 AUDIO_DIR = "audio_files"
 os.makedirs(AUDIO_DIR, exist_ok=True)
@@ -36,7 +37,9 @@ async def on_audio_complete(sid):
         await sio.emit('processing_status', 'Generating AI response...', room=sid)
         
         # Generate response using Ollama
-        ai_response = ollama_generate_text(transcription)
+        # ai_response = ollama_generate_text(transcription)
+        ai_response = conversation_chain(transcription)
+
         
         await sio.emit('processing_status', 'Converting response to speech...', room=sid)
         

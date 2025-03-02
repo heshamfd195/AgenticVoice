@@ -1,0 +1,19 @@
+# Socket IO
+python-socketio
+
+# Fast API
+fastapi 
+uvicorn 
+
+# AI
+openai-whisper 
+coqui-tts
+
+torch
+langchain
+
+
+numpy 
+soundfile 
+
+
