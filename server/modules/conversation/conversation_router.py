@@ -8,7 +8,7 @@ async def get_audio_status():
     """Check if the audio API is running."""
     return {"status": "Audio API is running"}
 
-@conversation_router.post("/process")
+@conversation_router.post("/config")
 async def process_audio():
     """Placeholder for audio processing logic."""
     return {"message": "Audio processing started"}

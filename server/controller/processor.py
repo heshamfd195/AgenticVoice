@@ -11,7 +11,6 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 
 async def on_audio_recieved(sid, data):
     """Handles incoming audio stream from WebSocket."""
-    print(f"Received {len(data)} bytes of audio from {sid}")
     
     # Check if this is the first chunk for this session
     is_first_chunk = not hasattr(on_audio_recieved, f'started_{sid}')
@@ -28,6 +27,7 @@ async def on_audio_complete(sid):
         delattr(on_audio_recieved, f'started_{sid}')
     
     audio_path = f'{AUDIO_DIR}/streamed_audio.mp3'
+    
     try:
         # Send processing status
         await sio.emit('processing_status', 'Transcribing audio...', room=sid)

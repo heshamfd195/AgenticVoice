@@ -1,0 +1,12 @@
+{
+    "language":"english",
+    "romanize":false,
+    "langth":200,
+    "voice":"male",
+    "level":"basic",
+    "role":"You are a conversation agent",
+    "scope":"",
+    "rules":[],
+    "instructions":[],
+    "allow_output":["tables"]
+}

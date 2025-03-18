@@ -1,0 +1,13 @@
+{
+    "whisper": {
+        "language": {
+            "english":"en",
+            "german":"de",
+            "urdu":"ur"
+        },
+        "size": {
+            "base": "base",
+            "medium": "medium"
+        }
+    }
+}

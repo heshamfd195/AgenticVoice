@@ -2,26 +2,28 @@ from enum import Enum
 
 class SocketEvents(str, Enum):
     # Audio Recording Events
-    AUDIO_STREAM = 'AUDIO_STREAM'
-    AUDIO_COMPLETE = 'AUDIO_COMPLETE'
+    AUDIO_STREAM = 'audio_stream'
+    AUDIO_COMPLETE = 'audio_complete'
+    AUDIO_PROCESSING = 'audio_processing'
     
     # Processing Status Events
-    PROCESSING_START = 'PROCESSING_START'
-    PROCESSING_STATUS = 'PROCESSING_STATUS'
-    PROCESSING_ERROR = 'PROCESSING_ERROR'
+    PROCESSING_START = 'processing_start'
+    PROCESSING_STATUS = 'processing_status'
+    PROCESSING_ERROR = 'processing_error'
     
     # Transcription Events
-    TRANSCRIPTION_START = 'TRANSCRIPTION_START'
-    TRANSCRIPTION_COMPLETE = 'TRANSCRIPTION_COMPLETE'
+    TRANSCRIPTION_START = 'transcription_start'
+    TRANSCRIPTION_COMPLETE = 'transcription_complete'
     
     # AI Response Events
-    AI_RESPONSE_START = 'AI_RESPONSE_START'
-    AI_RESPONSE_COMPLETE = 'AI_RESPONSE_COMPLETE'
+    AGENT_RESPONSE_START = 'agent_response_start'
+    AGENT_RESPONSE_PROCESSING = 'agent_response_processing'
+    AGENT_RESPONSE_COMPLETE = 'agent_response_complete'
     
     # Speech Synthesis Events
-    SYNTHESIS_START = 'SYNTHESIS_START'
-    SYNTHESIS_CHUNK = 'SYNTHESIS_CHUNK'
-    SYNTHESIS_COMPLETE = 'SYNTHESIS_COMPLETE'
+    SYNTHESIS_START = 'sythesis_start'
+    SYNTHESIS_CHUNK = 'sythesis_chunk'
+    SYNTHESIS_COMPLETE = 'sythesis_complete'
 
 class ProcessingStatus(str, Enum):
     TRANSCRIBING = 'Transcribing audio...'

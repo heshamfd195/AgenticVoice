@@ -1,7 +1,9 @@
 import whisper
 import os
 
-def transcribe_audio(file_path: str) -> str:
+file_path="audio_files/streamed_audio.mp3"
+
+def stt_whisper(language:str) -> str:
     # Load Whisper model with FP32 precision on CPU
     model = whisper.load_model("base", device="cpu")
     
@@ -10,7 +12,7 @@ def transcribe_audio(file_path: str) -> str:
         raise FileNotFoundError(f"File not found: {file_path}")
     
     # Transcribe the audio file
-    result = model.transcribe(file_path, fp16=False,language="en")
+    result = model.transcribe(file_path, fp16=False,language=language)
     
     return result["text"]
 

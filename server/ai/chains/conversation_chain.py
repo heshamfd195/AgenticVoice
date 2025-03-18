@@ -5,13 +5,16 @@ from langchain_ollama.llms import OllamaLLM
 # Initialize the Ollama model
 llm = OllamaLLM(model="llama3.2", base_url="http://192.168.18.9:11434")
 
-# Define the prompt template to restrict questions to addition and subtraction with max 200 words
+# Define the prompt template for general conversation
 template = """
-You are a helpful AI that only answers math questions related to addition and subtraction.
-If the question is not about addition or subtraction, reply with: "I can only answer addition or subtraction questions."
-Limit your response to a maximum of 200 words.
-Question: {question}
-Answer:
+You are a helpful AI assistant that can engage in natural conversations on various topics.
+Please provide clear, concise, and helpful responses.
+Keep your responses friendly and informative.
+Important: Limit all responses to a maximum of 100 words.
+
+Current conversation:
+Human: {question}
+Assistant:
 """
 prompt = PromptTemplate(input_variables=["question"], template=template)
 
@@ -25,10 +28,4 @@ def conversation_chain(question):
     response = math_chain.invoke({"question": question})
     return response['text']
 
-# Example usage
-# if __name__ == "__main__":
-#     question = "What is 15 + 7?"
-#     result = conversation_chain(question)
-#     print(f"Question: {question}")
-#     print(f"Response: {result}")
-#     print("-")
+

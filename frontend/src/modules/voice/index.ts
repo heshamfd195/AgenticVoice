@@ -67,11 +67,11 @@ export class VoiceController {
    * @private
    */
   private setupSocketListeners(): void {
-    this.socket.on('transcription_complete', (text: string) => {
+    this.socket.on(SOCKET_EVENTS.TRANSCRIPTION_COMPLETE, (text: string) => {
       this.updateState({ transcription: text });
     });
 
-    this.socket.on('processing_status', (status: string) => {
+    this.socket.on(SOCKET_EVENTS.PROCESSING_STATUS, (status: string) => {
       this.updateState({
         processingStatus: {
           isProcessing: true,
@@ -82,7 +82,7 @@ export class VoiceController {
 
     let chunks: Blob[] = [];
 
-    this.socket.on('audio_start', () => {
+    this.socket.on(SOCKET_EVENTS.AUDIO_START, () => {
       chunks = [];
       this.updateState({
         processingStatus: {
@@ -92,11 +92,11 @@ export class VoiceController {
       });
     });
 
-    this.socket.on('synthesized_audio_chunk', (audioChunk: ArrayBuffer) => {
+    this.socket.on(SOCKET_EVENTS.SYNTHESIZED_AUDIO_CHUNK, (audioChunk: ArrayBuffer) => {
       chunks.push(new Blob([audioChunk], { type: 'audio/mp3' }));
     });
 
-    this.socket.on('audio_complete', () => {
+    this.socket.on(SOCKET_EVENTS.AUDIO_COMPLETE_RESPONSE, () => {
       const audioBlob = new Blob(chunks, { type: 'audio/mp3' });
       const audioUrl = URL.createObjectURL(audioBlob);
       
@@ -245,10 +245,10 @@ export class VoiceController {
   public dispose(): void {
     this.stopRecording();
     this.stateSubject.complete();
-    this.socket.off('transcription_complete');
-    this.socket.off('processing_status');
-    this.socket.off('audio_start');
-    this.socket.off('synthesized_audio_chunk');
-    this.socket.off('audio_complete');
+    this.socket.off(SOCKET_EVENTS.TRANSCRIPTION_COMPLETE);
+    this.socket.off(SOCKET_EVENTS.PROCESSING_STATUS);
+    this.socket.off(SOCKET_EVENTS.AUDIO_START);
+    this.socket.off(SOCKET_EVENTS.SYNTHESIZED_AUDIO_CHUNK);
+    this.socket.off(SOCKET_EVENTS.AUDIO_COMPLETE_RESPONSE);
   }
 }
